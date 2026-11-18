@@ -8,7 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:bank/main.dart';
+import 'package:cinema/main.dart';
 
 void main() {
   testWidgets('cadastra ingresso e atualiza a lista apos um segundo', (
