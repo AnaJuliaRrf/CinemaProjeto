@@ -106,7 +106,7 @@ class IngressoRepository {
       await _api.enviarIngresso(pendente);
       await _banco.marcarComoSincronizado(pendente.idCliente);
       return ResultadoCadastro(pendente.copyWith(sincronizado: true));
-    } on Exception catch (e) {
+    } catch (e) {
       return ResultadoCadastro(pendente, erro: descreverErro(e));
     }
   }
@@ -131,7 +131,7 @@ class IngressoRepository {
         await _api.enviarIngresso(ingresso);
         await _banco.marcarComoSincronizado(ingresso.idCliente);
         enviados++;
-      } on Exception catch (e) {
+      } catch (e) {
         erro = descreverErro(e);
         if (_ehFalhaDeConexao(e)) {
           semConexao = true;
@@ -151,7 +151,7 @@ class IngressoRepository {
         }
         buscaRemotaOk = true;
         recebidos = remotos.length;
-      } on Exception catch (e) {
+      } catch (e) {
         erro ??= descreverErro(e);
       }
     }

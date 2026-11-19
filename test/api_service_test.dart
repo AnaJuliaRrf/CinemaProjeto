@@ -80,6 +80,35 @@ void main() {
     expect((await api.enviarIngresso(_ingresso)).idCliente, 'abc');
   });
 
+  test('API antiga (sem id_cliente): POST 201 ainda conta como sucesso',
+      () async {
+    final api = ApiService(
+      baseUrl: _url,
+      cliente: MockClient((_) async => _json({
+            'mensagem': 'Ingresso cadastrado com sucesso',
+            'ingresso': {'id': 3, 'valor': '18.90', 'numero_sala': 8},
+          }, 201)),
+    );
+
+    final salvo = await api.enviarIngresso(_ingresso);
+    expect(salvo.idCliente, 'abc');
+    expect(salvo.sincronizado, isTrue);
+  });
+
+  test('GET ignora registros antigos sem id_cliente (não quebra)', () async {
+    final api = ApiService(
+      baseUrl: _url,
+      cliente: MockClient((_) async => _json([
+            {'id': 2, 'valor': '18.90', 'numero_sala': 8},
+            {'id': 1, 'id_cliente': null, 'valor': '25.00', 'numero_sala': 4},
+            {'id': 3, 'id_cliente': 'abc', 'valor': '30.00', 'numero_sala': 5},
+          ], 200)),
+    );
+
+    final lista = await api.buscarIngressos();
+    expect(lista.map((i) => i.idCliente), ['abc']);
+  });
+
   test('status 400/500 lança ApiException com a mensagem da API', () async {
     for (final status in [400, 500]) {
       final api = ApiService(

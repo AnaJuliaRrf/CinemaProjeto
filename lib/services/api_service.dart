@@ -8,7 +8,7 @@ import '../models/ingresso_cinema.dart';
 /// URL base da API cinema-api publicada no Render.
 /// Troque aqui (e só aqui). No Teste 2, coloque um endereço inválido,
 /// por exemplo 'https://api-invalida.onrender.com', para simular a API fora.
-const String urlBaseApi = 'https://SUBSTITUIR-PELA-URL-REAL.onrender.com';
+const String urlBaseApi = 'https://cinemaprojeto.onrender.com';
 
 /// Erro de resposta da API (status diferente de 200/201 ou corpo inesperado).
 class ApiException implements Exception {
@@ -53,8 +53,14 @@ class ApiService {
     if (dados is! List) {
       throw const ApiException('Resposta inesperada do GET /ingressos');
     }
+    // Registros sem id_cliente (gravados antes dessa coluna existir) são
+    // ignorados: sem a chave não dá para relacioná-los sem duplicar.
     return dados
-        .map((item) => IngressoCinema.fromJson(item as Map<String, dynamic>))
+        .whereType<Map<String, dynamic>>()
+        .where((item) =>
+            item['id_cliente'] is String &&
+            (item['id_cliente'] as String).isNotEmpty)
+        .map(IngressoCinema.fromJson)
         .toList();
   }
 
@@ -70,11 +76,9 @@ class ApiService {
         .timeout(tempoLimite);
     _verificarStatus(resposta);
 
-    final dados = _decodificar(resposta);
-    if (dados is Map<String, dynamic> && dados['ingresso'] is Map) {
-      return IngressoCinema.fromJson(dados['ingresso'] as Map<String, dynamic>);
-    }
-    throw const ApiException('Resposta inesperada do POST /ingressos');
+    // 200/201 = a API confirmou a gravação. Não dependemos do corpo da
+    // resposta (versões antigas da API não devolvem id_cliente).
+    return ingresso.copyWith(sincronizado: true);
   }
 
   void _verificarStatus(http.Response resposta) {

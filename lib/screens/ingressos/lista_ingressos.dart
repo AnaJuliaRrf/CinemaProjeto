@@ -82,11 +82,19 @@ class _ListaIngressosState extends State<ListaIngressos> {
 
   Future<void> _sincronizar() async {
     setState(() => _sincronizando = true);
-    final resultado = await _repository.sincronizarPendentes();
-    await _carregar();
-    if (!mounted) return;
-    setState(() => _sincronizando = false);
-    _mostrarMensagem(resultado.mensagem, sucesso: resultado.sucesso);
+    try {
+      final resultado = await _repository.sincronizarPendentes();
+      await _carregar();
+      if (!mounted) return;
+      _mostrarMensagem(resultado.mensagem, sucesso: resultado.sucesso);
+    } catch (_) {
+      // Só ocorre se falhar o SQLite do aparelho.
+      if (mounted) {
+        _mostrarMensagem('Não foi possível sincronizar agora', sucesso: false);
+      }
+    } finally {
+      if (mounted) setState(() => _sincronizando = false);
+    }
   }
 
   @override
