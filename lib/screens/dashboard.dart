@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../repository/ingresso_repository.dart';
 import './ingressos/lista_ingressos.dart';
 
 class Dashboard extends StatelessWidget {
-  const Dashboard({super.key});
+  final IngressoRepository? repository;
+
+  const Dashboard({super.key, this.repository});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +27,8 @@ class Dashboard extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const ListaIngressos(),
+                    builder: (context) =>
+                        ListaIngressos(repository: repository),
                   ),
                 );
               },

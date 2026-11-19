@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import './repository/ingresso_repository.dart';
 import './screens/dashboard.dart';
 
 void main() {
@@ -6,7 +7,12 @@ void main() {
 }
 
 class CinemaApp extends StatelessWidget {
-  const CinemaApp({super.key});
+  /// Opcional: permite injetar um Repository (ex.: nos testes).
+  /// No app real fica nulo e as telas usam o Repository padrão
+  /// (SQLite do aparelho + API no Render).
+  final IngressoRepository? repository;
+
+  const CinemaApp({super.key, this.repository});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +49,7 @@ class CinemaApp extends StatelessWidget {
           border: OutlineInputBorder(),
         ),
       ),
-      home: const Dashboard(),
+      home: Dashboard(repository: repository),
     );
   }
 }
