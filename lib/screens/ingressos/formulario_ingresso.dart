@@ -42,7 +42,8 @@ class _FormularioIngressoState extends State<FormularioIngresso> {
       return;
     }
 
-    final novoIngresso = IngressoCinema(ingresso, numeroSala);
+    final novoIngresso =
+        IngressoCinema.novo(valor: ingresso, numeroSala: numeroSala);
     Navigator.pop(context, novoIngresso);
   }
 

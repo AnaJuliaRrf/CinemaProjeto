@@ -12,8 +12,8 @@ class ListaIngressos extends StatefulWidget {
 
 class _ListaIngressosState extends State<ListaIngressos> {
   final List<IngressoCinema> _ingressos = [
-    IngressoCinema(25.00, 3),
-    IngressoCinema(30.00, 5),
+    IngressoCinema.novo(valor: 25.00, numeroSala: 3),
+    IngressoCinema.novo(valor: 30.00, numeroSala: 5),
   ];
 
   Future<void> _abreFormulario() async {
@@ -50,7 +50,7 @@ class _ListaIngressosState extends State<ListaIngressos> {
             child: ListTile(
               leading: const Icon(Icons.movie),
               title: Text('Sala ${ingresso.numeroSala}'),
-              subtitle: Text(formato.format(ingresso.ingresso)),
+              subtitle: Text(formato.format(ingresso.valor)),
             ),
           );
         },
