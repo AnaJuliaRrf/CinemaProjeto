@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Necessária para o app acessar a API (cinema-api no Render). -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="Cinema"
         android:name="${applicationName}"
