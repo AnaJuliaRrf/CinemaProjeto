@@ -60,6 +60,24 @@ void main() {
     expect(find.text('1 ingresso · 1 pendente'), findsOneWidget);
   });
 
+  testWidgets('"Sincronizar pendentes" transforma Pendente em Sincronizado',
+      (tester) async {
+    api.online = false;
+    await abrirLista(tester);
+    await cadastrar(tester, '25', '3');
+    expect(find.text('Pendente'), findsOneWidget);
+
+    api.online = true; // "volta a baseUrl correta"
+    await tester.tap(find.text('Sincronizar pendentes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pendente'), findsNothing);
+    expect(find.text('Sincronizado'), findsOneWidget);
+    expect(find.text('1 ingresso sincronizado'), findsOneWidget);
+    expect(find.text('1 ingresso · 0 pendentes'), findsOneWidget);
+    expect(api.servidor, hasLength(1));
+  });
+
   testWidgets('valida valor e sala antes de cadastrar', (tester) async {
     await abrirLista(tester);
 

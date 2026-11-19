@@ -19,6 +19,57 @@ class ResultadoCadastro {
   bool get sincronizado => ingresso.sincronizado;
 }
 
+/// Resumo da sincronização manual, para a tela exibir num SnackBar.
+class ResultadoSincronizacao {
+  /// Pendentes enviados e confirmados pela API nesta rodada.
+  final int enviados;
+
+  /// Quantos continuam pendentes no aparelho depois da rodada.
+  final int pendentes;
+
+  /// Se o GET /ingressos (busca dos registros remotos) funcionou.
+  final bool buscaRemotaOk;
+
+  /// Quantos ingressos a API devolveu no GET /ingressos.
+  final int recebidosDaApi;
+
+  /// Motivo da falha mais relevante (null se deu tudo certo).
+  final String? erro;
+
+  const ResultadoSincronizacao({
+    required this.enviados,
+    required this.pendentes,
+    required this.buscaRemotaOk,
+    this.recebidosDaApi = 0,
+    this.erro,
+  });
+
+  bool get sucesso => pendentes == 0 && buscaRemotaOk;
+
+  String get mensagem {
+    final partes = <String>[];
+    if (enviados > 0) {
+      partes.add(enviados == 1
+          ? '1 ingresso sincronizado'
+          : '$enviados ingressos sincronizados');
+    }
+    if (pendentes > 0) {
+      final texto = pendentes == 1
+          ? '1 continua pendente'
+          : '$pendentes continuam pendentes';
+      partes.add(erro == null ? texto : '$texto: $erro');
+    } else if (!buscaRemotaOk) {
+      partes.add('não foi possível buscar os ingressos da API'
+          '${erro == null ? '' : ': $erro'}');
+    }
+    if (partes.isEmpty) {
+      partes.add('Nenhum ingresso pendente. Lista atualizada com a API');
+    }
+    final frase = partes.join('. ');
+    return frase[0].toUpperCase() + frase.substring(1);
+  }
+}
+
 /// Ponto único de acesso aos dados de ingressos.
 ///
 /// As telas só falam com o Repository. É aqui (e só aqui) que se decide
@@ -59,6 +110,66 @@ class IngressoRepository {
       return ResultadoCadastro(pendente, erro: descreverErro(e));
     }
   }
+
+  /// Sincronização manual (botão "Sincronizar pendentes"):
+  /// 1. envia, um por um, os ingressos com sincronizado = 0;
+  /// 2. marca como sincronizado apenas os que a API confirmou;
+  /// 3. busca os ingressos remotos (GET /ingressos) e grava no SQLite
+  ///    com sincronizado = 1, usando id_cliente como chave (sem duplicar).
+  ///
+  /// Nunca lança exceção por falha de rede: devolve um resumo. Se a API
+  /// estiver inacessível, para na primeira falha de conexão (não adianta
+  /// esperar o timeout de cada pendente) e mantém os demais pendentes.
+  Future<ResultadoSincronizacao> sincronizarPendentes() async {
+    final pendentes = await _banco.listarPendentes();
+    var enviados = 0;
+    String? erro;
+    var semConexao = false;
+
+    for (final ingresso in pendentes) {
+      try {
+        await _api.enviarIngresso(ingresso);
+        await _banco.marcarComoSincronizado(ingresso.idCliente);
+        enviados++;
+      } on Exception catch (e) {
+        erro = descreverErro(e);
+        if (_ehFalhaDeConexao(e)) {
+          semConexao = true;
+          break;
+        }
+        // Erro só deste registro (ex.: 400/500): segue para o próximo.
+      }
+    }
+
+    var buscaRemotaOk = false;
+    var recebidos = 0;
+    if (!semConexao) {
+      try {
+        final remotos = await _api.buscarIngressos();
+        for (final remoto in remotos) {
+          await _banco.inserirOuAtualizar(remoto);
+        }
+        buscaRemotaOk = true;
+        recebidos = remotos.length;
+      } on Exception catch (e) {
+        erro ??= descreverErro(e);
+      }
+    }
+
+    final restantes = await _banco.listarPendentes();
+    return ResultadoSincronizacao(
+      enviados: enviados,
+      pendentes: restantes.length,
+      buscaRemotaOk: buscaRemotaOk,
+      recebidosDaApi: recebidos,
+      erro: erro,
+    );
+  }
+
+  static bool _ehFalhaDeConexao(Object erro) =>
+      erro is SocketException ||
+      erro is http.ClientException ||
+      erro is TimeoutException;
 
   /// Mensagem curta e amigável para cada tipo de falha.
   static String descreverErro(Object erro) {

@@ -28,6 +28,7 @@ class _ListaIngressosState extends State<ListaIngressos> {
 
   List<IngressoCinema> _ingressos = [];
   bool _carregando = true;
+  bool _sincronizando = false;
 
   int get _pendentes => _ingressos.where((i) => !i.sincronizado).length;
 
@@ -79,13 +80,27 @@ class _ListaIngressosState extends State<ListaIngressos> {
     );
   }
 
+  Future<void> _sincronizar() async {
+    setState(() => _sincronizando = true);
+    final resultado = await _repository.sincronizarPendentes();
+    await _carregar();
+    if (!mounted) return;
+    setState(() => _sincronizando = false);
+    _mostrarMensagem(resultado.mensagem, sucesso: resultado.sucesso);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Ingressos de Cinema')),
       body: Column(
         children: [
-          _Resumo(total: _ingressos.length, pendentes: _pendentes),
+          _Resumo(
+            total: _ingressos.length,
+            pendentes: _pendentes,
+            sincronizando: _sincronizando,
+            onSincronizar: _sincronizando ? null : _sincronizar,
+          ),
           Expanded(child: _conteudo()),
         ],
       ),
@@ -134,27 +149,51 @@ class _ListaIngressosState extends State<ListaIngressos> {
   }
 }
 
-/// Faixa com o total de ingressos e quantos ainda estão pendentes.
+/// Faixa com o total de ingressos, quantos estão pendentes
+/// e o botão "Sincronizar pendentes".
 class _Resumo extends StatelessWidget {
   final int total;
   final int pendentes;
+  final bool sincronizando;
+  final VoidCallback? onSincronizar;
 
-  const _Resumo({required this.total, required this.pendentes});
+  const _Resumo({
+    required this.total,
+    required this.pendentes,
+    required this.sincronizando,
+    required this.onSincronizar,
+  });
 
   @override
   Widget build(BuildContext context) {
     final temPendentes = pendentes > 0;
+    final cor = temPendentes ? Colors.orange.shade900 : Colors.red.shade900;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
       color: temPendentes ? Colors.orange.shade50 : Colors.red.shade50,
-      child: Text(
-        '$total ${total == 1 ? 'ingresso' : 'ingressos'} · '
-        '$pendentes ${pendentes == 1 ? 'pendente' : 'pendentes'}',
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: temPendentes ? Colors.orange.shade900 : Colors.red.shade900,
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '$total ${total == 1 ? 'ingresso' : 'ingressos'} · '
+              '$pendentes ${pendentes == 1 ? 'pendente' : 'pendentes'}',
+              style: TextStyle(fontWeight: FontWeight.w600, color: cor),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: onSincronizar,
+            style: TextButton.styleFrom(foregroundColor: cor),
+            icon: sincronizando
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.sync),
+            label: const Text('Sincronizar pendentes'),
+          ),
+        ],
       ),
     );
   }
