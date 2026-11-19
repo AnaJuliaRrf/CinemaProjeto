@@ -2,7 +2,7 @@
 
 - **Temática do aplicativo:** Cinema (entidade `IngressoCinema`)
 - **Estudante:** Ana Júlia Ferreira Rodrigues
-- **Link da API publicada:** https://SUBSTITUIR-PELA-URL-REAL.onrender.com
+- **Link da API publicada:** https://cinemaprojeto.onrender.com
 - **Repositório da API (cinema-api):** https://github.com/AnaJuliaRrf/cinema-api
 
 ## Descrição
